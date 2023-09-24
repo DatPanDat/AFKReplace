@@ -63,10 +63,11 @@ namespace AFKReplace
         // Also, since the gameObject for the player is deleted when they disconnect, we don't need to worry about cleaning any variables :) 
         private void AFKChecker()
         {
-            //Log.Info($"AFK Time: {this.AFKTime} AFK Count: {this.AFKCount}");
-            if (AFKReplace.Instance.Config.RestrictedRoles.Contains(this.ply.Role) || Player.List.Count() <= AFKReplace.Instance.Config.minPlayers || !Round.InProgress) return;
-
             bool isScp079 = (this.ply.Role.Type.ToString() == "Scp079");
+
+            //Log.Info($"AFK Time: {this.AFKTime} AFK Count: {this.AFKCount}");
+            if (AFKReplace.Instance.Config.RestrictedRoles.Contains(this.ply.Role) || isScp079 || Player.List.Count() <= AFKReplace.Instance.Config.minPlayers || !Round.InProgress) return;
+
             bool scp096TryNotToCry = false;
 
             // When SCP096 is in the state "TryNotToCry" he cannot move or it will cancel,
@@ -119,7 +120,7 @@ namespace AFKReplace
                 Vector3 pos = this.ply.Position;
                 Quaternion rot = this.ply.Rotation;//get player pos and rotation
 
-                IEnumerable<Item> items = this.ply.Items;//saving current inventory
+                IEnumerable<Item> items = this.ply.Items;//saving current inventory                
                 Dictionary<ItemType, ushort> ammoAndAmount = this.ply.Ammo;//saving current ammo(is out here for when replacement not found)
 
                 List<Player> specPlayers = new();
@@ -162,7 +163,7 @@ namespace AFKReplace
 
                     if (this.ply.Role == RoleTypeId.Scp079)//Check 079 location xp and ap
                     {
-                        Log.Debug("DC: SCP-079 Detected");
+                        Log.Debug("AFK: SCP-079 Detected");
                         Exp079 = this.ply.Role.As<Scp079Role>().Experience;
                         Ap079 = this.ply.Role.As<Scp079Role>().Energy;
                         Room079 = this.ply.Role.As<Scp079Role>().Camera;
@@ -170,7 +171,7 @@ namespace AFKReplace
 
                     if (this.ply.Role == RoleTypeId.Scp106)//check 106 vigor
                     {
-                        Log.Debug("DC: SCP-106 Detected");
+                        Log.Debug("AFK: SCP-106 Detected");
                         Vigor106 = this.ply.Role.As<Scp106Role>().Vigor;
                     }
 
@@ -202,8 +203,12 @@ namespace AFKReplace
                             PlayerToReplace.Role.As<Scp106Role>().Vigor = Vigor106;
                         }
 
+
+
                         foreach (Item item in items)//Inventory giving
                         {
+                            Log.Debug(item);
+
                             if (item is Armor == true)
                             {
                                 PlayerToReplace.AddItem(item.Type);
