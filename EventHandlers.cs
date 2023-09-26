@@ -8,6 +8,7 @@ namespace AFKReplace.EventHandler
     public class EventHandlers
     {
         public AFKReplace plugin;
+        public bool IsDisabled = false;
 
         public void OnPlayerVerified(VerifiedEventArgs ev)
         {

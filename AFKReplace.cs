@@ -6,6 +6,8 @@ using Scp914H = Exiled.Events.Handlers.Scp914;
 using Scp079 = Exiled.Events.Handlers.Scp079;
 
 using AFKReplace.EventHandler;
+using Exiled.API.Interfaces;
+using Exiled.Loader;
 
 
 namespace AFKReplace
@@ -28,6 +30,17 @@ namespace AFKReplace
             Instance = this;
 
             ev = new EventHandlers();
+
+            foreach (IPlugin<IConfig> plugin in Loader.Plugins)
+            {
+                switch (plugin.Name)
+                {
+                    case "CiSpy" when plugin.Config.IsEnabled:
+                        Log.Debug("CiSpy detected, enabling compatibility.");
+                        API.API.CiSpyRole.Init(plugin.Assembly);
+                        break;
+                }
+            }
 
             Player.Verified += ev.OnPlayerVerified;
             Player.ChangingRole += ev.OnSetClass;
