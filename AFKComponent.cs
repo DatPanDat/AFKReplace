@@ -7,6 +7,7 @@ using PlayerRoles;
 using Exiled.API.Enums;
 using Exiled.API.Features.Roles;
 using System.Collections.Generic;
+using AFKReplace.API.Features.ExternalRole.Enums;
 using CustomPlayerEffects;
 using Exiled.API.Features.Items;
 
@@ -45,7 +46,7 @@ namespace AFKReplace
             if (timer > delay)
             {
                 timer = 0f;
-                if (!this.disabled)
+                if (!this.disabled && !AFKReplace.Instance.ev.IsDisabled)
                 {
                     try
                     {
@@ -144,6 +145,8 @@ namespace AFKReplace
                 {
                     Log.Debug("AFK: Successfully gotten replacement...");
 
+                    bool isExternalRole = API.API.IsExternalRole(this.ply);
+
                     float health = this.ply.Health;
                     float ahealth = this.ply.ArtificialHealth;
                     float hshield = this.ply.HumeShield;//save current hp, ahp, hs
@@ -161,21 +164,34 @@ namespace AFKReplace
                     float Ap079 = 0f, Vigor106 = 0f;
                     Exiled.API.Features.Camera Room079 = null;
 
-                    if (this.ply.Role == RoleTypeId.Scp079)//Check 079 location xp and ap
+                    if (!isExternalRole)
                     {
-                        Log.Debug("AFK: SCP-079 Detected");
-                        Exp079 = this.ply.Role.As<Scp079Role>().Experience;
-                        Ap079 = this.ply.Role.As<Scp079Role>().Energy;
-                        Room079 = this.ply.Role.As<Scp079Role>().Camera;
+                        if (this.ply.Role == RoleTypeId.Scp079) //Check 079 location xp and ap
+                        {
+                            Log.Debug("AFK: SCP-079 Detected");
+                            Exp079 = this.ply.Role.As<Scp079Role>().Experience;
+                            Ap079 = this.ply.Role.As<Scp079Role>().Energy;
+                            Room079 = this.ply.Role.As<Scp079Role>().Camera;
+                        }
+
+                        if (this.ply.Role == RoleTypeId.Scp106) //check 106 vigor
+                        {
+                            Log.Debug("AFK: SCP-106 Detected");
+                            Vigor106 = this.ply.Role.As<Scp106Role>().Vigor;
+                        }
                     }
 
-                    if (this.ply.Role == RoleTypeId.Scp106)//check 106 vigor
+                    switch (API.API.GetExternalRole(this.ply))
                     {
-                        Log.Debug("AFK: SCP-106 Detected");
-                        Vigor106 = this.ply.Role.As<Scp106Role>().Vigor;
+                        case ExternalRoleType.CiSpy:
+                            Log.Debug("AFK: Player is a Spy, replacing...");
+                            API.API.CiSpyRole.SpawnRole(this.ply, this.PlayerToReplace);
+                            break;
+                        default:
+                            Log.Debug("AFK: Player does not have a valid external role, replacing...");
+                            PlayerToReplace.Role.Set(this.ply.Role, RoleSpawnFlags.None);//spawn new player
+                            break;
                     }
-
-                    PlayerToReplace.Role.Set(this.ply.Role, RoleSpawnFlags.None);//spawn new player
 
                     //making afk specs
                     this.ply.ClearInventory(true);
@@ -190,17 +206,20 @@ namespace AFKReplace
                         PlayerToReplace.Health = health;
                         PlayerToReplace.ArtificialHealth = ahealth;
                         PlayerToReplace.HumeShield = hshield;//HP, AHP, HS
-
-                        if (PlayerToReplace.Role == RoleTypeId.Scp079)//if 079, take them to correct room with right amount of xp and ap
+                        
+                        if (!isExternalRole)
                         {
-                            PlayerToReplace.Role.As<Scp079Role>().Experience = Exp079;
-                            PlayerToReplace.Role.As<Scp079Role>().Energy = Ap079;
-                            PlayerToReplace.Role.As<Scp079Role>().Camera = Room079;
-                        }
+                            if (PlayerToReplace.Role == RoleTypeId.Scp079) //if 079, take them to correct room with right amount of xp and ap
+                            {
+                                PlayerToReplace.Role.As<Scp079Role>().Experience = Exp079;
+                                PlayerToReplace.Role.As<Scp079Role>().Energy = Ap079;
+                                PlayerToReplace.Role.As<Scp079Role>().Camera = Room079;
+                            }
 
-                        if (PlayerToReplace.Role == RoleTypeId.Scp106)//if 106, give the right amount of vigor
-                        {
-                            PlayerToReplace.Role.As<Scp106Role>().Vigor = Vigor106;
+                            if (PlayerToReplace.Role == RoleTypeId.Scp106) //if 106, give the right amount of vigor
+                            {
+                                PlayerToReplace.Role.As<Scp106Role>().Vigor = Vigor106;
+                            }
                         }
 
 
@@ -208,16 +227,18 @@ namespace AFKReplace
                         foreach (Item item in items)//Inventory giving
                         {
                             Log.Debug(item);
+                            Item dupItem = item.Clone();
 
-                            if (item is Armor == true)
+                            if (dupItem is Armor == true)
                             {
-                                PlayerToReplace.AddItem(item.Type);
+                                PlayerToReplace.AddItem(dupItem.Type);
                             }
 
                             else
                             {
-                                PlayerToReplace.AddItem(item);
+                                PlayerToReplace.AddItem(dupItem);
                             }
+                            
                         }
 
                         PlayerToReplace.SetAmmo(AmmoType.Nato9, ammo1);
