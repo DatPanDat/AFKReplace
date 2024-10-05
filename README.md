@@ -1,3 +1,5 @@
+# publicized upon request, most are unchanged
+
 # AFKReplace
 A Plugin that kinda works like my [DCReplace Port](https://github.com/DatPanDat/PlayerReplace) but for AFK detection instead.
 
